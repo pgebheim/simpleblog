@@ -1,0 +1,10 @@
+h1= title
+
+form(action='/posts/create', method='POST')
+  label(for='title') Title
+  input(name='title', id='title')
+  br
+  label(for='content') Content
+  textarea(name='content', id='content', type='content')
+  br
+  input(type='submit')
