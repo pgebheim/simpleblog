@@ -45,7 +45,7 @@ mongoose.model('user', {
     indexes: ['login'],
     static: {
         authenticate: function(login, password) {
-            return this.find({login: login, password: password}, {user_id: 1});
+            return this.find({login: login, password: password});
         },
         create: function(login, password) {
             var user = db.model('user');
