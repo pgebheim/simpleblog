@@ -1,11 +1,12 @@
 h1= title
 
 - for (var item in posts)
-  div
-    div= posts[item].title
-    div= posts[item].content
-    div Posted By: 
-      = posts[item].user_id
-    div Posted On: 
-      = posts[item].posted_on
+  div.post
+    h3= posts[item].title
+    div.content= posts[item].content
+    ul
+      li Posted By: 
+        = posts[item].login
+      li Posted On: 
+        = posts[item].posted_on
   hr

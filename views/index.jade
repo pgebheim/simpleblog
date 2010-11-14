@@ -1,6 +1,12 @@
 h1= title
-p Welcome to #{title}
+p
+  - if(user)
+    | Hey #{user.login}! 
+  | Welcome to #{title}
 
-a(href='/posts/create') Make a new post
+- if(user)
+  a(href='/posts/create') Make a new post
+- else
+  a(href='/login') Login to post
 
 div#posts

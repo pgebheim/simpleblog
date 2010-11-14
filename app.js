@@ -21,12 +21,6 @@ app.configure(function(){
   app.use(express.cookieDecoder());
   app.use(express.session());
 
-  // CSS
-  app.use(express.compiler({
-      src: __dirname + '/public',
-      enable: ['sass']
-  }));
-
   app.use(app.router);
 
   app.use(express.favicon());
@@ -66,17 +60,13 @@ mongoose.model('user', {
 });
 
 mongoose.model('post', {
-    properties: ['user_id', 'posted_on', 'title', 'content'],
+    properties: ['login', 'posted_on', 'title', 'content'],
     indexes: ['user_id'],
     static: {
-        find_by_user_id: function(user_id) {
-            this.find({user_id: user_id});
-        },
-
-        create: function(user_id, title, content) {
+        create: function(login, title, content) {
             var post = db.model('post');
             var p = new post();
-            p.user_id = user_id;
+            p.login = login;
             p.posted_on = new Date();
             p.title = title;
             p.content = content;
@@ -89,25 +79,32 @@ var db = mongoose.connect('mongodb://localhost/simpleblog');
 
 // Custom Middleware
 // Should put this in a module
-var authenticate = function(req, res, next) {
-    var user_id = req.session.user_id;
-    if(user_id) {
-        db.model('user').findById(user_id).one(function(user) {
-            if (user) {
-                req.user = user;
-                next();
+
+var authenticate = function(redirect) {
+    return function(req, res, next) {
+        var user_id = req.session.user_id;
+        if(user_id) {
+            db.model('user').findById(user_id).one(function(user) {
+                if (user) {
+                    req.user = user;
+                    next();
+                } else {
+                    res.redirect('/login');
+                }
+            });
+        } else {
+            if(redirect) {
+                res.redirect('/login');
             } else {
-                next(new Error('Failed to load user ' + user_id));
+                next()
             }
-        });
-    } else {
-        res.redirect('/login');
-    }
+        }
+    };
 };
 
 var require_user_params = function(req, res, next) {
     if(!req.body.login || !req.body.password) {
-        next(new Error('Need username and password'));
+        res.redirect('/login');
     } else {
         next();
     }
@@ -115,10 +112,11 @@ var require_user_params = function(req, res, next) {
 
 // Routes
 
-app.get('/', function(req, res){
+app.get('/', authenticate(false), function(req, res){
   res.render('index.jade', {
     locals: {
-        title: 'Woah! Tis a blog!'
+        title: 'Woah! Tis a blog!',
+        user: req.user
     },
     layout: 'front_page_layout.jade'
   });
@@ -139,14 +137,14 @@ app.post('/login', require_user_params, function(req, res) {
     var user = db.model('user');
     user.authenticate(req.body.login, req.body.password).one(function(u) {
         if(!u) {
-            throw new Error('Incorrect login/password');
-        }
-        // SOO hard to hack, better to have a real authentication token
-        console.log(u);
-        req.session.user_id = u._id;
+            res.redirect('/login');
+        } else {
+            // SOO hard to hack, better to have a real authentication token
+            req.session.user_id = u._id;
 
-        // Open redirect at the moment. Bad bad bad.
-        res.redirect(req.params.redirect || '/');
+            // Open redirect at the moment. Bad bad bad.
+            res.redirect(req.params.redirect || '/');
+        }
     });
 });
 
@@ -167,7 +165,7 @@ app.post('/new_user', require_user_params, function(req, res) {
     });
 });
 
-app.get('/posts/create', authenticate, function(req, res) {
+app.get('/posts/create', authenticate(true), function(req, res) {
     res.render('post_create.jade', {
         locals: {
             title: 'Create a new post!'
@@ -175,9 +173,9 @@ app.get('/posts/create', authenticate, function(req, res) {
     });
 });
 
-app.post('/posts/create', authenticate, function(req, res) {
+app.post('/posts/create', authenticate(true), function(req, res) {
     var posts = db.model('post');
-    posts.create(req.session.user_id, req.body.title, req.body.content).save(function() {
+    posts.create(req.user.login, req.body.title, req.body.content).save(function() {
         res.redirect('/');
     });
 });
@@ -207,7 +205,7 @@ app.get('/posts/:id?', function(req, res, next) {
 var render_posts = function(req, res, use_layout) {
     var posts = db.model('post');
     posts.find().all(function(p) {
-        if(p) {
+        if(p && p.length > 0) {
             res.render('posts.jade', {
                 locals: {
                     title: "All posts",
