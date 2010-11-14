@@ -2,7 +2,11 @@ h1= title
 
 - for (var item in posts)
   div.post
-    h3= posts[item].title
+    h3
+      - if(linkify)
+        a(href='posts/' + posts[item]._id.toHexString())= posts[item].title
+      - else
+        = posts[item].title
     div.content= posts[item].content
     ul
       li Posted By: 

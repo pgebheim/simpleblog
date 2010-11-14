@@ -186,7 +186,8 @@ app.get('/posts/:id?', function(req, res, next) {
                 res.render('posts.jade', {
                     locals: {
                         title: p.title,
-                        posts: [p]
+                        posts: [p],
+                        linkify: false
                     }    
                 });
             } else {
@@ -207,7 +208,8 @@ var render_posts = function(req, res, use_layout) {
             res.render('posts.jade', {
                 locals: {
                     title: "All posts",
-                    posts: p
+                    posts: p,
+                    linkify: true
                 },
                 layout: use_layout
             });
