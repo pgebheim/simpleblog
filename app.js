@@ -40,8 +40,6 @@ app.configure('production', function(){
 require.paths.unshift('support/mongoose');
 var mongoose = require('mongoose').Mongoose;
 
-console.log(mongoose);
-
 mongoose.model('user', {
     properties: ['login', 'password'],
     indexes: ['login'],
